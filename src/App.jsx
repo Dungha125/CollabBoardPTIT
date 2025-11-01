@@ -14,6 +14,7 @@ import './App.css';
 
 const API_URL = 'https://collabboardptitbe-production.up.railway.app';
 
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
