@@ -15,7 +15,7 @@ import RoomInfo from './components/RoomInfo';
 import socketService from './services/socketService';
 import './App.css';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://collabboardptitbe-production.up.railway.app';
 
 
 function App() {
