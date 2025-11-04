@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaTimes, FaCopy, FaCheck, FaEnvelope, FaLink } from 'react-icons/fa';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://collabboardptitbe-production.up.railway.app';
 
 const ShareRoomModal = ({ roomId, onClose }) => {
   const [emails, setEmails] = useState('');
@@ -9,7 +9,7 @@ const ShareRoomModal = ({ roomId, onClose }) => {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState('');
 
-  const shareUrl = `http://localhost:3000/room/${roomId}`;
+  const shareUrl = `https://collab-board-ptit.vercel.app/room/${roomId}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
