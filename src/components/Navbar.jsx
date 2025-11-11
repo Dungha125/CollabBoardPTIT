@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { FaShapes, FaComments, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
+import { FaShapes, FaComments, FaUserCircle, FaSignOutAlt, FaFolderOpen, FaPaintBrush } from 'react-icons/fa';
 
-const Navbar = ({ user, onChatClick, onLogout }) => {
+const Navbar = ({ user, onChatClick, onLogout, onNavigateToRooms, onNavigateToWhiteboard, currentView }) => {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -11,6 +11,16 @@ const Navbar = ({ user, onChatClick, onLogout }) => {
       </div>
       
       <div className="navbar-tools">
+        {currentView === 'whiteboard' ? (
+          <button className="nav-btn" onClick={onNavigateToRooms}>
+            <FaFolderOpen /> Quản lý phòng
+          </button>
+        ) : (
+          <button className="nav-btn" onClick={onNavigateToWhiteboard}>
+            <FaPaintBrush /> Bảng vẽ
+          </button>
+        )}
+        
         <button className="chat-toggle-btn" onClick={onChatClick}>
           <FaComments /> Chat
         </button>
@@ -34,6 +44,17 @@ const Navbar = ({ user, onChatClick, onLogout }) => {
 
           {showMenu && (
             <div className="dropdown-menu">
+              {currentView === 'whiteboard' && (
+                <button 
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowMenu(false);
+                    onNavigateToRooms();
+                  }}
+                >
+                  <FaFolderOpen /> Quản lý phòng
+                </button>
+              )}
               <button 
                 className="dropdown-item logout-btn"
                 onClick={onLogout}

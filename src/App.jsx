@@ -2,20 +2,19 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Excalidraw,
   MainMenu,
-  Footer,
   WelcomeScreen,
-  LiveCollaborationTrigger,
 } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import Navbar from './components/Navbar';
 import ChatWindow from './components/ChatWindow';
 import HomePage from './components/HomePage';
-import ShareRoomModal from './components/ShareRoomModal';
+import CollaboratorModal from './components/CollaboratorModal';
 import RoomInfo from './components/RoomInfo';
+import RoomManagement from './components/RoomManagement';
 import socketService from './services/socketService';
 import './App.css';
 
-const API_URL = 'https://collabboardptitbe-production.up.railway.app';
+const API_URL = 'https://collabboardptitbe-production.up.railway.app'; 
 
 
 function App() {
@@ -27,10 +26,34 @@ function App() {
   const [userCount, setUserCount] = useState(1);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [currentView, setCurrentView] = useState('whiteboard'); // 'whiteboard' or 'rooms'
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  
+  // Lưu trữ scene data để persist khi có thay đổi
+  const [sceneData, setSceneData] = useState({
+    elements: [],
+    appState: {
+      viewBackgroundColor: "#ffffff",
+      currentItemStrokeColor: "#000000",
+      currentItemBackgroundColor: "transparent",
+      currentItemFillStyle: "solid",
+      currentItemStrokeWidth: 2,
+      currentItemRoughness: 1,
+      currentItemOpacity: 100,
+      currentItemFontFamily: 1,
+      currentItemFontSize: 20,
+      currentItemTextAlign: "left",
+      currentItemStartArrowhead: null,
+      currentItemEndArrowhead: "arrow",
+    }
+  });
+  
   const isReceivingUpdate = useRef(false);
   const lastSentState = useRef(null);
   const excalidrawAPIRef = useRef(null);
   const throttleTimeout = useRef(null);
+  const createRoomTimestamp = useRef(0);
+  const hasLoadedInitialData = useRef(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -49,29 +72,40 @@ function App() {
     setIsConnected(true);
 
     // Setup socket listeners
-    socketService.onRoomState(({ elements, appState }) => {
-      console.log('Received room state');
+    socketService.onRoomState(({ elements, appState, isInitialLoad }) => {
+      console.log(`📥 Received room state (${elements?.length || 0} elements, initial: ${isInitialLoad})`);
+      
+      // Filter appState to remove collaborators (not serializable)
+      const safeAppState = appState ? {
+        ...appState,
+        collaborators: new Map() // Reset to empty Map
+      } : undefined;
+      
+      // Cập nhật state để persist dữ liệu
+      setSceneData({
+        elements: elements || [],
+        appState: safeAppState || sceneData.appState
+      });
+      
+      // Cập nhật Excalidraw canvas
       if (excalidrawAPIRef.current) {
         isReceivingUpdate.current = true;
         
-        // Filter appState to remove collaborators (not serializable)
-        const safeAppState = appState ? {
-          ...appState,
-          collaborators: new Map() // Reset to empty Map
-        } : undefined;
-        
         excalidrawAPIRef.current.updateScene({
-          elements,
+          elements: elements || [],
           appState: safeAppState
         });
+        
         setTimeout(() => {
           isReceivingUpdate.current = false;
         }, 200);
       }
+      
+      hasLoadedInitialData.current = true;
     });
 
     socketService.onDrawingUpdate(({ elements, appState }) => {
-      console.log('Received drawing update');
+      console.log(`📥 Received drawing update (${elements?.length || 0} elements)`);
       if (excalidrawAPIRef.current && !isReceivingUpdate.current) {
         isReceivingUpdate.current = true;
         
@@ -81,10 +115,18 @@ function App() {
           collaborators: new Map() // Reset to empty Map
         } : undefined;
         
+        // Cập nhật state để persist dữ liệu
+        setSceneData({
+          elements: elements || [],
+          appState: safeAppState || sceneData.appState
+        });
+        
+        // Cập nhật Excalidraw canvas
         excalidrawAPIRef.current.updateScene({
-          elements,
+          elements: elements || [],
           appState: safeAppState
         });
+        
         setTimeout(() => {
           isReceivingUpdate.current = false;
         }, 200);
@@ -107,7 +149,13 @@ function App() {
     const urlRoomId = window.location.pathname.split('/room/')[1];
     if (urlRoomId) {
       setRoomId(urlRoomId);
+      setCurrentView('whiteboard');
       socketService.joinRoom(urlRoomId, user);
+    }
+    
+    // Check if we're on rooms management page
+    if (window.location.pathname === '/rooms') {
+      setCurrentView('rooms');
     }
 
     return () => {
@@ -153,30 +201,124 @@ function App() {
   };
 
   const createRoom = async () => {
+    // Prevent double-click or multiple calls
+    if (isCreatingRoom) {
+      console.log('⚠️  Already creating a room, please wait...');
+      return;
+    }
+
+    // Debounce: Prevent rapid consecutive calls (minimum 2 seconds between calls)
+    const now = Date.now();
+    const timeSinceLastCall = now - createRoomTimestamp.current;
+    if (timeSinceLastCall < 2000) {
+      console.log('⚠️  Please wait before creating another room');
+      return;
+    }
+    createRoomTimestamp.current = now;
+
     try {
+      setIsCreatingRoom(true);
+      console.log('🏗️  Creating new room...');
+      
       const response = await fetch(`${API_URL}/api/rooms/create`, {
         method: 'POST',
-        credentials: 'include'
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: `Room ${new Date().toLocaleString('vi-VN')}`,
+          description: ''
+        })
       });
       
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Room created:', data.roomId);
+        
+        // Reset scene data cho room mới
+        setSceneData({
+          elements: [],
+          appState: {
+            viewBackgroundColor: "#ffffff",
+            currentItemStrokeColor: "#000000",
+            currentItemBackgroundColor: "transparent",
+            currentItemFillStyle: "solid",
+            currentItemStrokeWidth: 2,
+            currentItemRoughness: 1,
+            currentItemOpacity: 100,
+            currentItemFontFamily: 1,
+            currentItemFontSize: 20,
+            currentItemTextAlign: "left",
+            currentItemStartArrowhead: null,
+            currentItemEndArrowhead: "arrow",
+          }
+        });
+        hasLoadedInitialData.current = false;
+        
         setRoomId(data.roomId);
         socketService.joinRoom(data.roomId, user);
         window.history.pushState({}, '', `/room/${data.roomId}`);
         setIsShareModalOpen(true);
+      } else {
+        const error = await response.json();
+        console.error('❌ Failed to create room:', error);
+        alert('Không thể tạo phòng. Vui lòng thử lại.');
       }
     } catch (error) {
-      console.error('Error creating room:', error);
+      console.error('❌ Error creating room:', error);
+      alert('Lỗi kết nối. Vui lòng thử lại.');
+    } finally {
+      // Delay reset to ensure UI doesn't flicker
+      setTimeout(() => {
+        setIsCreatingRoom(false);
+      }, 500);
     }
   };
 
-  const joinRoom = useCallback((targetRoomId) => {
+  const _joinRoom = useCallback((targetRoomId) => {
     if (targetRoomId && user) {
       setRoomId(targetRoomId);
       socketService.joinRoom(targetRoomId, user);
     }
   }, [user]);
+
+  const navigateToRooms = () => {
+    setCurrentView('rooms');
+    window.history.pushState({}, '', '/rooms');
+  };
+
+  const navigateToWhiteboard = () => {
+    setCurrentView('whiteboard');
+    window.history.pushState({}, '', '/');
+  };
+
+  const navigateToRoom = (targetRoomId) => {
+    // Reset scene data để load dữ liệu mới từ room
+    setSceneData({
+      elements: [],
+      appState: {
+        viewBackgroundColor: "#ffffff",
+        currentItemStrokeColor: "#000000",
+        currentItemBackgroundColor: "transparent",
+        currentItemFillStyle: "solid",
+        currentItemStrokeWidth: 2,
+        currentItemRoughness: 1,
+        currentItemOpacity: 100,
+        currentItemFontFamily: 1,
+        currentItemFontSize: 20,
+        currentItemTextAlign: "left",
+        currentItemStartArrowhead: null,
+        currentItemEndArrowhead: "arrow",
+      }
+    });
+    hasLoadedInitialData.current = false;
+    
+    setRoomId(targetRoomId);
+    setCurrentView('whiteboard');
+    socketService.joinRoom(targetRoomId, user);
+    window.history.pushState({}, '', `/room/${targetRoomId}`);
+  };
 
   const handleExcalidrawChange = useCallback((elements, appState) => {
     // Only send updates if:
@@ -246,31 +388,28 @@ function App() {
         user={user} 
         onChatClick={toggleChat} 
         onLogout={handleLogout}
+        onNavigateToRooms={navigateToRooms}
+        onNavigateToWhiteboard={navigateToWhiteboard}
+        currentView={currentView}
       />
       
       <main className="content-area">
-        <div className="excalidraw-wrapper">
-          <Excalidraw
+        {currentView === 'rooms' ? (
+          <RoomManagement 
+            user={user} 
+            onNavigateToRoom={navigateToRoom}
+          />
+        ) : (
+          <>
+            <div className="excalidraw-wrapper">
+              <Excalidraw
             excalidrawAPI={(api) => setExcalidrawAPI(api)}
             onChange={(elements, appState) => {
               handleExcalidrawChange(elements, appState);
             }}
             initialData={{
-              appState: {
-                viewBackgroundColor: "#ffffff",
-                currentItemStrokeColor: "#000000",
-                currentItemBackgroundColor: "transparent",
-                currentItemFillStyle: "solid",
-                currentItemStrokeWidth: 2,
-                currentItemRoughness: 1,
-                currentItemOpacity: 100,
-                currentItemFontFamily: 1,
-                currentItemFontSize: 20,
-                currentItemTextAlign: "left",
-                currentItemStartArrowhead: null,
-                currentItemEndArrowhead: "arrow",
-              },
-              elements: [],
+              appState: sceneData.appState,
+              elements: sceneData.elements,
             }}
             name="Collaborative Whiteboard"
             UIOptions={{
@@ -297,18 +436,6 @@ function App() {
               <MainMenu.DefaultItems.ToggleTheme />
             </MainMenu>
             
-            <Footer>
-              <LiveCollaborationTrigger 
-                onSelect={() => {
-                  if (!roomId) {
-                    createRoom();
-                  } else {
-                    setIsShareModalOpen(true);
-                  }
-                }}
-              />
-            </Footer>
-            
             <WelcomeScreen>
               <WelcomeScreen.Hints.MenuHint />
               <WelcomeScreen.Hints.ToolbarHint />
@@ -317,12 +444,25 @@ function App() {
           </Excalidraw>
         </div>
         
-        {roomId && (
+        {roomId ? (
           <RoomInfo 
             roomId={roomId}
             userCount={userCount}
             onShareClick={() => setIsShareModalOpen(true)}
           />
+        ) : (
+          <div className="create-room-prompt">
+            <button 
+              className="create-room-btn" 
+              onClick={createRoom}
+              disabled={isCreatingRoom}
+            >
+              <span className="icon">{isCreatingRoom ? '⏳' : '🎨'}</span>
+              <span className="text">
+                {isCreatingRoom ? 'Đang tạo phòng...' : 'Tạo phòng để cộng tác'}
+              </span>
+            </button>
+          </div>
         )}
         
         {isShareModalOpen && roomId && (
@@ -332,7 +472,9 @@ function App() {
           />
         )}
         
-        {isChatOpen && <ChatWindow onClose={toggleChat} user={user} />}
+            {isChatOpen && <ChatWindow onClose={toggleChat} user={user} />}
+          </>
+        )}
       </main>
     </div>
   );
