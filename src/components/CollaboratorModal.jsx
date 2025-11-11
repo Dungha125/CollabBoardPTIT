@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCopy, FaCheck, FaEnvelope, FaLink, FaUsers, FaTrash } from 'react-icons/fa';
 
-const API_URL = 'https://collabboardptitbe-production.up.railway.app';
+const API_URL = 'http://localhost:5000';
 
 const CollaboratorModal = ({ roomId, onClose }) => {
   const [activeTab, setActiveTab] = useState('invite'); // 'invite' or 'manage'
@@ -14,7 +14,7 @@ const CollaboratorModal = ({ roomId, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [sendEmail, setSendEmail] = useState(true); // Checkbox: có gửi email không
 
-  const shareUrl = `https://collab-board-ptit.vercel.app/room/${roomId}`;
+  const shareUrl = `http://localhost:3000/room/${roomId}`;
 
   useEffect(() => {
     if (activeTab === 'manage') {

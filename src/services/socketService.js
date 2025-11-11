@@ -6,7 +6,7 @@ class SocketService {
     this.currentRoomId = null;
   }
 
-  connect(url = 'https://collabboardptitbe-production.up.railway.app') {
+  connect(url = 'http://localhost:5000') {
     if (this.socket?.connected) {
       return this.socket;
     }
