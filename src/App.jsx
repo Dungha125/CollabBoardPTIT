@@ -14,8 +14,7 @@ import RoomManagement from './components/RoomManagement';
 import socketService from './services/socketService';
 import './App.css';
 
-const API_URL = 'http://localhost:5000'; // Backend API
-// Frontend sẽ chạy trên localhost:3000
+const API_URL = 'https://collabboardptitbe-production.up.railway.app'; 
 
 
 function App() {

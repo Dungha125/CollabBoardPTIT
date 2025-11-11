@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './RoomManagement.css';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://collabboardptitbe-production.up.railway.app';
 
 // eslint-disable-next-line no-unused-vars
 function RoomManagement({ user, onNavigateToRoom }) {
