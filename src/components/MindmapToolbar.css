@@ -1,0 +1,99 @@
+.mindmap-toolbar {
+  position: fixed;
+  top: 70px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 300;
+  min-width: 280px;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateX(-20px);
+  pointer-events: none;
+}
+
+.mindmap-toolbar.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: all;
+}
+
+.toolbar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-icon {
+  font-size: 1.5em;
+  color: #1e88e5;
+}
+
+.toolbar-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #333;
+}
+
+.toolbar-hint {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: rgba(30, 136, 229, 0.1);
+  border-radius: 8px;
+  font-size: 0.9em;
+  color: #1e88e5;
+  line-height: 1.6;
+}
+
+.toolbar-hint p {
+  margin: 5px 0;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.toolbar-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .mindmap-toolbar {
+    top: auto;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    min-width: auto;
+  }
+}
+

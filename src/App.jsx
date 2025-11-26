@@ -1,9 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  Excalidraw,
-  MainMenu,
-  WelcomeScreen,
-} from "@excalidraw/excalidraw";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Excalidraw, MainMenu, WelcomeScreen } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import Navbar from './components/Navbar';
 import ChatWindow from './components/ChatWindow';
@@ -11,10 +7,14 @@ import HomePage from './components/HomePage';
 import CollaboratorModal from './components/CollaboratorModal';
 import RoomInfo from './components/RoomInfo';
 import RoomManagement from './components/RoomManagement';
+import AccountManagement from './components/AccountManagement';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import MindmapToolbar from './components/MindmapToolbar';
+import CollaboratorCursors from './components/CollaboratorCursors';
 import socketService from './services/socketService';
 import './App.css';
 
-const API_URL = 'https://collabboardptitbe-production.up.railway.app'; 
+const API_URL = 'https://collabboardptitbe-production.up.railway.app';
 
 
 function App() {
@@ -26,10 +26,10 @@ function App() {
   const [userCount, setUserCount] = useState(1);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [currentView, setCurrentView] = useState('whiteboard'); // 'whiteboard' or 'rooms'
+  const [currentView, setCurrentView] = useState('whiteboard'); 
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  
-  // Lưu trữ scene data để persist khi có thay đổi
+  const [drawingMode, setDrawingMode] = useState('normal'); // 'normal' | 'mindmap' | 'diagram'
+  const [collaborators, setCollaborators] = useState({});
   const [sceneData, setSceneData] = useState({
     elements: [],
     appState: {
@@ -45,9 +45,9 @@ function App() {
       currentItemTextAlign: "left",
       currentItemStartArrowhead: null,
       currentItemEndArrowhead: "arrow",
-    }
+    },
   });
-  
+
   const isReceivingUpdate = useRef(false);
   const lastSentState = useRef(null);
   const excalidrawAPIRef = useRef(null);
@@ -59,21 +59,51 @@ function App() {
     checkAuthStatus();
   }, []);
 
-  // Update excalidrawAPI ref
   useEffect(() => {
     excalidrawAPIRef.current = excalidrawAPI;
   }, [excalidrawAPI]);
 
-  // Setup socket connection when user is logged in (ONCE)
+  // Track mouse movement for collaborator cursors
+  useEffect(() => {
+    if (!roomId || !isConnected || !excalidrawAPI) return;
+
+    const handleMouseMove = (e) => {
+      const canvas = document.querySelector('.excalidraw-canvas');
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const appState = excalidrawAPI.getAppState();
+      const zoom = appState.zoom || 1;
+      const scrollX = appState.scrollX || 0;
+      const scrollY = appState.scrollY || 0;
+
+      // Convert screen coordinates to scene coordinates
+      const sceneX = (e.clientX - rect.left) / zoom + scrollX;
+      const sceneY = (e.clientY - rect.top) / zoom + scrollY;
+
+      socketService.sendPointerUpdate({ x: sceneX, y: sceneY }, user);
+    };
+
+    const canvas = document.querySelector('.excalidraw-canvas');
+    if (canvas) {
+      canvas.addEventListener('mousemove', handleMouseMove);
+    }
+
+    return () => {
+      if (canvas) {
+        canvas.removeEventListener('mousemove', handleMouseMove);
+      }
+    };
+  }, [roomId, isConnected, excalidrawAPI, user]);
+
   useEffect(() => {
     if (!user) return;
 
     socketService.connect(API_URL);
     setIsConnected(true);
 
-    // Setup socket listeners
     socketService.onRoomState(({ elements, appState, isInitialLoad }) => {
-      console.log(`📥 Received room state (${elements?.length || 0} elements, initial: ${isInitialLoad})`);
+      console.log(`Received room state (${elements?.length || 0} elements, initial: ${isInitialLoad})`);
       
       // Filter appState to remove collaborators (not serializable)
       const safeAppState = appState ? {
@@ -84,97 +114,104 @@ function App() {
       // Cập nhật state để persist dữ liệu
       setSceneData({
         elements: elements || [],
-        appState: safeAppState || sceneData.appState
+        appState: safeAppState || sceneData.appState,
       });
-      
-      // Cập nhật Excalidraw canvas
+
       if (excalidrawAPIRef.current) {
         isReceivingUpdate.current = true;
-        
+
         excalidrawAPIRef.current.updateScene({
           elements: elements || [],
-          appState: safeAppState
+          appState: safeAppState,
         });
-        
+
         setTimeout(() => {
           isReceivingUpdate.current = false;
         }, 200);
       }
-      
+
       hasLoadedInitialData.current = true;
     });
 
     socketService.onDrawingUpdate(({ elements, appState }) => {
-      console.log(`📥 Received drawing update (${elements?.length || 0} elements)`);
+      console.log(`Received drawing update (${elements?.length || 0} elements)`);
       if (excalidrawAPIRef.current && !isReceivingUpdate.current) {
         isReceivingUpdate.current = true;
-        
-        // Filter appState to remove collaborators (not serializable)
         const safeAppState = appState ? {
           ...appState,
-          collaborators: new Map() // Reset to empty Map
+          collaborators: new Map() 
         } : undefined;
         
         // Cập nhật state để persist dữ liệu
         setSceneData({
           elements: elements || [],
-          appState: safeAppState || sceneData.appState
+          appState: safeAppState || sceneData.appState,
         });
-        
-        // Cập nhật Excalidraw canvas
         excalidrawAPIRef.current.updateScene({
           elements: elements || [],
-          appState: safeAppState
+          appState: safeAppState,
         });
-        
+
         setTimeout(() => {
           isReceivingUpdate.current = false;
         }, 200);
       }
     });
 
-    socketService.onUserJoined(({ user: joinedUser }) => {
-      console.log('User joined:', joinedUser);
+    socketService.onUserJoined(({ user: joinedUser, userId }) => {
+      console.log("User joined:", joinedUser);
+      setCollaborators(prev => ({
+        ...prev,
+        [userId]: joinedUser,
+      }));
     });
 
     socketService.onUserLeft(({ userId }) => {
-      console.log('User left:', userId);
+      console.log("User left:", userId);
+      setCollaborators(prev => {
+        const updated = { ...prev };
+        delete updated[userId];
+        return updated;
+      });
     });
 
     socketService.onUserCount((count) => {
       setUserCount(count);
     });
 
-    // Check if there's a room ID in the URL
+    // Listen for pointer updates from other users
+    socketService.onPointerUpdate(({ userId, pointer, user }) => {
+      if (window.updateCollaboratorCursor) {
+        window.updateCollaboratorCursor(userId, pointer, user);
+      }
+    });
     const urlRoomId = window.location.pathname.split('/room/')[1];
     if (urlRoomId) {
       setRoomId(urlRoomId);
-      setCurrentView('whiteboard');
+      setCurrentView("whiteboard");
       socketService.joinRoom(urlRoomId, user);
     }
-    
-    // Check if we're on rooms management page
-    if (window.location.pathname === '/rooms') {
-      setCurrentView('rooms');
+    if (window.location.pathname === "/rooms") {
+      setCurrentView("rooms");
     }
 
     return () => {
       socketService.removeAllListeners();
       socketService.disconnect();
     };
-  }, [user]); // Only depend on user, run once when user logs in
+  }, [user]); 
 
   const checkAuthStatus = async () => {
     try {
       const response = await fetch(`${API_URL}/auth/status`, {
-        credentials: 'include'
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
       }
     } catch (error) {
-      console.error('Error checking auth:', error);
+      console.error("Error checking auth:", error);
     } finally {
       setLoading(false);
     }
@@ -187,54 +224,51 @@ function App() {
   const handleLogout = async () => {
     try {
       await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
+        method: "POST",
+        credentials: "include",
       });
       setUser(null);
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error("Error logging out:", error);
     }
   };
 
   const toggleChat = () => {
-    setIsChatOpen(prev => !prev);
+    setIsChatOpen((prev) => !prev);
   };
 
   const createRoom = async () => {
-    // Prevent double-click or multiple calls
     if (isCreatingRoom) {
-      console.log('⚠️  Already creating a room, please wait...');
+      console.log('Already creating a room, please wait...');
       return;
     }
-
-    // Debounce: Prevent rapid consecutive calls (minimum 2 seconds between calls)
     const now = Date.now();
     const timeSinceLastCall = now - createRoomTimestamp.current;
     if (timeSinceLastCall < 2000) {
-      console.log('⚠️  Please wait before creating another room');
+      console.log('Please wait before creating another room');
       return;
     }
     createRoomTimestamp.current = now;
 
     try {
       setIsCreatingRoom(true);
-      console.log('🏗️  Creating new room...');
+      console.log('Creating new room...');
       
       const response = await fetch(`${API_URL}/api/rooms/create`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
-          name: `Room ${new Date().toLocaleString('vi-VN')}`,
-          description: ''
-        })
+          name: `Room ${new Date().toLocaleString("vi-VN")}`,
+          description: "",
+        }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Room created:', data.roomId);
+        console.log('Room created:', data.roomId);
         
         // Reset scene data cho room mới
         setSceneData({
@@ -252,49 +286,50 @@ function App() {
             currentItemTextAlign: "left",
             currentItemStartArrowhead: null,
             currentItemEndArrowhead: "arrow",
-          }
+          },
         });
         hasLoadedInitialData.current = false;
-        
+
         setRoomId(data.roomId);
         socketService.joinRoom(data.roomId, user);
-        window.history.pushState({}, '', `/room/${data.roomId}`);
+        window.history.pushState({}, "", `/room/${data.roomId}`);
         setIsShareModalOpen(true);
       } else {
         const error = await response.json();
-        console.error('❌ Failed to create room:', error);
+        console.error('Failed to create room:', error);
         alert('Không thể tạo phòng. Vui lòng thử lại.');
       }
     } catch (error) {
-      console.error('❌ Error creating room:', error);
+      console.error('Error creating room:', error);
       alert('Lỗi kết nối. Vui lòng thử lại.');
     } finally {
-      // Delay reset to ensure UI doesn't flicker
       setTimeout(() => {
         setIsCreatingRoom(false);
       }, 500);
     }
   };
 
-  const _joinRoom = useCallback((targetRoomId) => {
-    if (targetRoomId && user) {
-      setRoomId(targetRoomId);
-      socketService.joinRoom(targetRoomId, user);
-    }
-  }, [user]);
-
   const navigateToRooms = () => {
-    setCurrentView('rooms');
-    window.history.pushState({}, '', '/rooms');
+    setCurrentView("rooms");
+    window.history.pushState({}, "", "/rooms");
   };
 
   const navigateToWhiteboard = () => {
-    setCurrentView('whiteboard');
-    window.history.pushState({}, '', '/');
+    setCurrentView("whiteboard");
+    window.history.pushState({}, "", "/");
+  };
+
+  const navigateToAccount = () => {
+    setCurrentView("account");
+    window.history.pushState({}, "", "/account");
+  };
+
+  const navigateToAnalytics = () => {
+    setCurrentView("analytics");
+    window.history.pushState({}, "", "/analytics");
   };
 
   const navigateToRoom = (targetRoomId) => {
-    // Reset scene data để load dữ liệu mới từ room
     setSceneData({
       elements: [],
       appState: {
@@ -310,42 +345,33 @@ function App() {
         currentItemTextAlign: "left",
         currentItemStartArrowhead: null,
         currentItemEndArrowhead: "arrow",
-      }
+      },
     });
     hasLoadedInitialData.current = false;
-    
+
     setRoomId(targetRoomId);
-    setCurrentView('whiteboard');
+    setCurrentView("whiteboard");
     socketService.joinRoom(targetRoomId, user);
-    window.history.pushState({}, '', `/room/${targetRoomId}`);
+    window.history.pushState({}, "", `/room/${targetRoomId}`);
   };
 
   const handleExcalidrawChange = useCallback((elements, appState) => {
-    // Only send updates if:
-    // 1. Not currently receiving updates from others
-    // 2. In a room
-    // 3. Socket is connected
     if (isReceivingUpdate.current || !roomId || !isConnected) {
       return;
     }
-
-    // Throttle: only send updates every 100ms
     if (throttleTimeout.current) {
       clearTimeout(throttleTimeout.current);
     }
 
     throttleTimeout.current = setTimeout(() => {
       const currentStateString = JSON.stringify({ 
-        elements: elements?.slice(0, 10), // Only check first 10 for performance
+        elements: elements?.slice(0, 10), 
         elementCount: elements?.length 
       });
       
-      // Avoid sending if nothing changed
       if (lastSentState.current !== currentStateString) {
         lastSentState.current = currentStateString;
         console.log('Sending drawing update, elements:', elements?.length);
-        
-        // Filter appState to remove non-serializable data
         const serializableAppState = appState ? {
           viewBackgroundColor: appState.viewBackgroundColor,
           currentItemStrokeColor: appState.currentItemStrokeColor,
@@ -362,12 +388,11 @@ function App() {
           scrollX: appState.scrollX,
           scrollY: appState.scrollY,
           zoom: appState.zoom,
-          // Don't send: collaborators (Map - not serializable)
         } : undefined;
         
         socketService.sendDrawingUpdate(elements, serializableAppState);
       }
-    }, 100); // Throttle to 100ms
+    }, 100); 
   }, [roomId, isConnected]);
 
   if (loading) {
@@ -384,24 +409,35 @@ function App() {
 
   return (
     <div className="app-container">
-      <Navbar 
-        user={user} 
-        onChatClick={toggleChat} 
+      <Navbar
+        user={user}
+        onChatClick={toggleChat}
         onLogout={handleLogout}
         onNavigateToRooms={navigateToRooms}
         onNavigateToWhiteboard={navigateToWhiteboard}
+        onNavigateToAccount={navigateToAccount}
+        onNavigateToAnalytics={navigateToAnalytics}
         currentView={currentView}
+        onMindmapToggle={() => setDrawingMode(drawingMode === 'mindmap' ? 'normal' : 'mindmap')}
+        isMindmapMode={drawingMode === 'mindmap'}
       />
-      
+
       <main className="content-area">
-        {currentView === 'rooms' ? (
-          <RoomManagement 
+        {currentView === "rooms" ? (
+          <RoomManagement user={user} onNavigateToRoom={navigateToRoom} />
+        ) : currentView === "account" ? (
+          <AccountManagement 
             user={user} 
-            onNavigateToRoom={navigateToRoom}
+            onLogout={handleLogout}
+            onNavigateToWhiteboard={navigateToWhiteboard}
+          />
+        ) : currentView === "analytics" ? (
+          <AnalyticsDashboard 
+            onNavigateToWhiteboard={navigateToWhiteboard}
           />
         ) : (
           <>
-            <div className="excalidraw-wrapper">
+            <div className="excalidraw-wrapper" id="excalidraw-wrapper">
               <Excalidraw
             excalidrawAPI={(api) => setExcalidrawAPI(api)}
             onChange={(elements, appState) => {
@@ -442,7 +478,24 @@ function App() {
               <WelcomeScreen.Hints.HelpHint />
             </WelcomeScreen>
           </Excalidraw>
+          
+          {/* Collaborator Cursors Overlay */}
+          {roomId && (
+            <CollaboratorCursors 
+              collaborators={collaborators}
+              excalidrawAPI={excalidrawAPI}
+            />
+          )}
         </div>
+        
+        {/* Mindmap Toolbar */}
+        {drawingMode === 'mindmap' && (
+          <MindmapToolbar
+            excalidrawAPI={excalidrawAPI}
+            onModeChange={setDrawingMode}
+            isActive={drawingMode === 'mindmap'}
+          />
+        )}
         
         {roomId ? (
           <RoomInfo 
@@ -466,13 +519,15 @@ function App() {
         )}
         
         {isShareModalOpen && roomId && (
-          <ShareRoomModal
+          <CollaboratorModal
             roomId={roomId}
             onClose={() => setIsShareModalOpen(false)}
           />
         )}
         
-            {isChatOpen && <ChatWindow onClose={toggleChat} user={user} />}
+          {isChatOpen && roomId && (
+  <ChatWindow onClose={toggleChat} user={user} roomId={roomId} />
+)}
           </>
         )}
       </main>

@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCopy, FaCheck, FaEnvelope, FaLink, FaUsers, FaTrash } from 'react-icons/fa';
 
-const API_URL = 'https://collabboardptitbe-production.up.railway.app';
+const API_URL = 'https://collabboardptitbe-production.up.railway.app/';
 
 const CollaboratorModal = ({ roomId, onClose }) => {
-  const [activeTab, setActiveTab] = useState('invite'); // 'invite' or 'manage'
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('editor');
+  const [activeTab, setActiveTab] = useState("invite"); // 'invite' or 'manage'
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("editor");
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [collaborators, setCollaborators] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sendEmail, setSendEmail] = useState(true); // Checkbox: có gửi email không
@@ -17,7 +17,7 @@ const CollaboratorModal = ({ roomId, onClose }) => {
   const shareUrl = `https://collab-board-ptit.vercel.app/room/${roomId}`;
 
   useEffect(() => {
-    if (activeTab === 'manage') {
+    if (activeTab === "manage") {
       fetchCollaborators();
     }
   }, [activeTab, roomId]);
@@ -26,14 +26,14 @@ const CollaboratorModal = ({ roomId, onClose }) => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/api/rooms/${roomId}`, {
-        credentials: 'include'
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
         setCollaborators(data.collaborators || []);
       }
     } catch (error) {
-      console.error('Error fetching collaborators:', error);
+      console.error("Error fetching collaborators:", error);
     } finally {
       setLoading(false);
     }
@@ -47,34 +47,37 @@ const CollaboratorModal = ({ roomId, onClose }) => {
 
   const handleAddCollaborator = async () => {
     if (!email.trim()) {
-      setMessage('❌ Vui lòng nhập email');
+      setMessage("Vui lòng nhập email");
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setMessage('❌ Email không hợp lệ');
+      setMessage("Email không hợp lệ");
       return;
     }
 
     setSending(true);
-    setMessage('');
+    setMessage("");
 
     try {
       // 1. Thêm collaborator vào database
-      const addResponse = await fetch(`${API_URL}/api/rooms/${roomId}/collaborators`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, role })
-      });
+      const addResponse = await fetch(
+        `${API_URL}/api/rooms/${roomId}/collaborators`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ email, role }),
+        }
+      );
 
       if (!addResponse.ok) {
         const error = await addResponse.json();
-        setMessage(`❌ ${error.error || 'Không thể thêm cộng tác viên'}`);
+        setMessage(`${error.error || "Không thể thêm cộng tác viên"}`);
         setSending(false);
         return;
       }
@@ -82,36 +85,38 @@ const CollaboratorModal = ({ roomId, onClose }) => {
       // 2. Nếu checkbox "Gửi email" được chọn → Gửi email mời
       if (sendEmail) {
         const emailResponse = await fetch(`${API_URL}/api/rooms/invite`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          credentials: 'include',
+          credentials: "include",
           body: JSON.stringify({
             roomId,
-            emails: [email]
-          })
+            emails: [email],
+          }),
         });
 
         if (emailResponse.ok) {
-          setMessage(`✅ Đã thêm ${email} (${getRoleText(role)}) và gửi email mời!`);
+          setMessage(
+            `Đã thêm ${email} (${getRoleText(role)}) và gửi email mời!`
+          );
         } else {
-          setMessage(`⚠️ Đã thêm ${email} nhưng không gửi được email`);
+          setMessage(`Đã thêm ${email} nhưng không gửi được email`);
         }
       } else {
-        setMessage(`✅ Đã thêm ${email} (${getRoleText(role)})`);
+        setMessage(`Đã thêm ${email} (${getRoleText(role)})`);
       }
 
-      setEmail('');
-      setRole('editor');
-      
+      setEmail("");
+      setRole("editor");
+
       // Refresh collaborators list if on manage tab
-      if (activeTab === 'manage') {
+      if (activeTab === "manage") {
         await fetchCollaborators();
       }
     } catch (error) {
-      console.error('Error adding collaborator:', error);
-      setMessage('❌ Lỗi kết nối. Vui lòng thử lại.');
+      console.error("Error adding collaborator:", error);
+      setMessage("Lỗi kết nối. Vui lòng thử lại.");
     } finally {
       setSending(false);
     }
@@ -121,69 +126,86 @@ const CollaboratorModal = ({ roomId, onClose }) => {
     if (!confirm(`Xóa ${userName} khỏi phòng?`)) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/rooms/${roomId}/collaborators/${userId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
+      const response = await fetch(
+        `${API_URL}/api/rooms/${roomId}/collaborators/${userId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
 
       if (response.ok) {
-        setMessage(`✅ Đã xóa ${userName}`);
+        setMessage(`Đã xóa ${userName}`);
         await fetchCollaborators();
       } else {
         const error = await response.json();
-        setMessage(`❌ ${error.error || 'Không thể xóa'}`);
+        setMessage(`${error.error || "Không thể xóa"}`);
       }
     } catch (error) {
-      console.error('Error removing collaborator:', error);
-      setMessage('❌ Lỗi kết nối');
+      console.error("Error removing collaborator:", error);
+      setMessage("Lỗi kết nối");
     }
   };
 
   const handleUpdateRole = async (userId, newRole) => {
     try {
-      const response = await fetch(`${API_URL}/api/rooms/${roomId}/collaborators/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ role: newRole })
-      });
+      const response = await fetch(
+        `${API_URL}/api/rooms/${roomId}/collaborators/${userId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ role: newRole }),
+        }
+      );
 
       if (response.ok) {
-        setMessage(`✅ Đã cập nhật quyền`);
+        setMessage(`Đã cập nhật quyền`);
         await fetchCollaborators();
       } else {
         const error = await response.json();
-        setMessage(`❌ ${error.error || 'Không thể cập nhật'}`);
+        setMessage(`${error.error || "Không thể cập nhật"}`);
       }
     } catch (error) {
-      console.error('Error updating role:', error);
-      setMessage('❌ Lỗi kết nối');
+      console.error("Error updating role:", error);
+      setMessage("Lỗi kết nối");
     }
   };
 
   const getRoleText = (role) => {
     switch (role) {
-      case 'viewer': return 'Xem';
-      case 'editor': return 'Chỉnh sửa';
-      case 'admin': return 'Quản lý';
-      default: return role;
+      case "viewer":
+        return "Xem";
+      case "editor":
+        return "Chỉnh sửa";
+      case "admin":
+        return "Quản lý";
+      default:
+        return role;
     }
   };
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'viewer': return '#757575';
-      case 'editor': return '#4285f4';
-      case 'admin': return '#f4511e';
-      default: return '#757575';
+      case "viewer":
+        return "#757575";
+      case "editor":
+        return "#4285f4";
+      case "admin":
+        return "#f4511e";
+      default:
+        return "#757575";
     }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content collab-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-content collab-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>Chia sẻ & Cộng tác</h2>
           <button className="close-btn" onClick={onClose}>
@@ -194,14 +216,14 @@ const CollaboratorModal = ({ roomId, onClose }) => {
         {/* Tabs */}
         <div className="modal-tabs">
           <button
-            className={`tab ${activeTab === 'invite' ? 'active' : ''}`}
-            onClick={() => setActiveTab('invite')}
+            className={`tab ${activeTab === "invite" ? "active" : ""}`}
+            onClick={() => setActiveTab("invite")}
           >
             <FaEnvelope /> Mời người mới
           </button>
           <button
-            className={`tab ${activeTab === 'manage' ? 'active' : ''}`}
-            onClick={() => setActiveTab('manage')}
+            className={`tab ${activeTab === "manage" ? "active" : ""}`}
+            onClick={() => setActiveTab("manage")}
           >
             <FaUsers /> Quản lý ({collaborators.length})
           </button>
@@ -209,7 +231,7 @@ const CollaboratorModal = ({ roomId, onClose }) => {
 
         <div className="modal-body">
           {/* Tab: Mời người mới */}
-          {activeTab === 'invite' && (
+          {activeTab === "invite" && (
             <>
               {/* Share Link Section */}
               <div className="section">
@@ -228,11 +250,11 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                     className="share-link-input"
                   />
                   <button
-                    className={`copy-btn ${copied ? 'copied' : ''}`}
+                    className={`copy-btn ${copied ? "copied" : ""}`}
                     onClick={handleCopy}
                   >
                     {copied ? <FaCheck /> : <FaCopy />}
-                    {copied ? 'Đã copy!' : 'Copy'}
+                    {copied ? "Đã copy!" : "Copy"}
                   </button>
                 </div>
               </div>
@@ -246,7 +268,7 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                 <p className="section-description">
                   Thêm cộng tác viên với quyền cụ thể và gửi email mời
                 </p>
-                
+
                 <div className="form-group">
                   <label>Email</label>
                   <input
@@ -255,7 +277,9 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                     placeholder="example@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddCollaborator()}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && handleAddCollaborator()
+                    }
                   />
                 </div>
 
@@ -266,9 +290,9 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                   >
-                    <option value="viewer">👁️ Viewer - Chỉ xem</option>
-                    <option value="editor">✏️ Editor - Chỉnh sửa</option>
-                    <option value="admin">👑 Admin - Quản lý</option>
+                    <option value="viewer">Viewer - Chỉ xem</option>
+                    <option value="editor">Editor - Chỉnh sửa</option>
+                    <option value="admin">Admin - Quản lý</option>
                   </select>
                 </div>
 
@@ -282,7 +306,9 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                     <span>Gửi email mời ngay</span>
                   </label>
                   <small className="help-text">
-                    {sendEmail ? 'Người này sẽ nhận email với link tham gia' : 'Chỉ thêm vào danh sách, không gửi email'}
+                    {sendEmail
+                      ? "Người này sẽ nhận email với link tham gia"
+                      : "Chỉ thêm vào danh sách, không gửi email"}
                   </small>
                 </div>
 
@@ -291,14 +317,14 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                   onClick={handleAddCollaborator}
                   disabled={sending}
                 >
-                  {sending ? 'Đang xử lý...' : 'Thêm cộng tác viên'}
+                  {sending ? "Đang xử lý..." : "Thêm cộng tác viên"}
                 </button>
               </div>
             </>
           )}
 
           {/* Tab: Quản lý cộng tác viên */}
-          {activeTab === 'manage' && (
+          {activeTab === "manage" && (
             <div className="section">
               <h3>Danh sách cộng tác viên</h3>
               {loading ? (
@@ -308,7 +334,7 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                   <p>Chưa có cộng tác viên nào</p>
                   <button
                     className="secondary-btn"
-                    onClick={() => setActiveTab('invite')}
+                    onClick={() => setActiveTab("invite")}
                   >
                     Mời người đầu tiên
                   </button>
@@ -319,7 +345,9 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                     <div key={collab.id} className="collaborator-item">
                       <div className="collab-info">
                         <img
-                          src={collab.picture || 'https://via.placeholder.com/40'}
+                          src={
+                            collab.picture || "https://via.placeholder.com/40"
+                          }
                           alt={collab.name}
                           className="collab-avatar"
                         />
@@ -332,16 +360,25 @@ const CollaboratorModal = ({ roomId, onClose }) => {
                         <select
                           className="role-select"
                           value={collab.role}
-                          onChange={(e) => handleUpdateRole(collab.user_id, e.target.value)}
-                          style={{ borderColor: getRoleBadgeColor(collab.role) }}
+                          onChange={(e) =>
+                            handleUpdateRole(collab.user_id, e.target.value)
+                          }
+                          style={{
+                            borderColor: getRoleBadgeColor(collab.role),
+                          }}
                         >
-                          <option value="viewer">👁️ Viewer</option>
-                          <option value="editor">✏️ Editor</option>
-                          <option value="admin">👑 Admin</option>
+                          <option value="viewer">Viewer</option>
+                          <option value="editor">Editor</option>
+                          <option value="admin">Admin</option>
                         </select>
                         <button
                           className="remove-btn"
-                          onClick={() => handleRemoveCollaborator(collab.user_id, collab.name)}
+                          onClick={() =>
+                            handleRemoveCollaborator(
+                              collab.user_id,
+                              collab.name
+                            )
+                          }
                           title="Xóa"
                         >
                           <FaTrash />
@@ -356,7 +393,13 @@ const CollaboratorModal = ({ roomId, onClose }) => {
 
           {/* Message */}
           {message && (
-            <div className={`message ${message.includes('✅') || message.includes('⚠️') ? 'success' : 'error'}`}>
+            <div
+              className={`message ${
+                message.includes("✅") || message.includes("⚠️")
+                  ? "success"
+                  : "error"
+              }`}
+            >
               {message}
             </div>
           )}
@@ -810,4 +853,3 @@ const CollaboratorModal = ({ roomId, onClose }) => {
 };
 
 export default CollaboratorModal;
-

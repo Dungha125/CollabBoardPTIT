@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
-import { FaShapes, FaComments, FaUserCircle, FaSignOutAlt, FaFolderOpen, FaPaintBrush } from 'react-icons/fa';
+import { 
+  FaShapes, FaComments, FaUserCircle, FaSignOutAlt, 
+  FaFolderOpen, FaPaintBrush, FaUser, FaChartLine, FaProjectDiagram 
+} from 'react-icons/fa';
 
-const Navbar = ({ user, onChatClick, onLogout, onNavigateToRooms, onNavigateToWhiteboard, currentView }) => {
+const Navbar = ({ 
+  user, 
+  onChatClick, 
+  onLogout, 
+  onNavigateToRooms, 
+  onNavigateToWhiteboard,
+  onNavigateToAccount,
+  onNavigateToAnalytics,
+  currentView,
+  onMindmapToggle,
+  isMindmapMode
+}) => {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -11,13 +25,31 @@ const Navbar = ({ user, onChatClick, onLogout, onNavigateToRooms, onNavigateToWh
       </div>
       
       <div className="navbar-tools">
-        {currentView === 'whiteboard' ? (
-          <button className="nav-btn" onClick={onNavigateToRooms}>
-            <FaFolderOpen /> Quản lý phòng
-          </button>
-        ) : (
+        {currentView !== 'whiteboard' && (
           <button className="nav-btn" onClick={onNavigateToWhiteboard}>
             <FaPaintBrush /> Bảng vẽ
+          </button>
+        )}
+        
+        {currentView !== 'rooms' && (
+          <button className="nav-btn" onClick={onNavigateToRooms}>
+            <FaFolderOpen /> Phòng
+          </button>
+        )}
+        
+        {currentView !== 'analytics' && (
+          <button className="nav-btn" onClick={onNavigateToAnalytics}>
+            <FaChartLine /> Analytics
+          </button>
+        )}
+        
+        {currentView === 'whiteboard' && onMindmapToggle && (
+          <button 
+            className={`nav-btn ${isMindmapMode ? 'active' : ''}`}
+            onClick={onMindmapToggle}
+            title={isMindmapMode ? 'Thoát Mindmap Mode' : 'Bật Mindmap Mode'}
+          >
+            <FaProjectDiagram /> {isMindmapMode ? 'Thoát Mindmap' : 'Mindmap'}
           </button>
         )}
         
@@ -44,17 +76,33 @@ const Navbar = ({ user, onChatClick, onLogout, onNavigateToRooms, onNavigateToWh
 
           {showMenu && (
             <div className="dropdown-menu">
-              {currentView === 'whiteboard' && (
-                <button 
-                  className="dropdown-item"
-                  onClick={() => {
-                    setShowMenu(false);
-                    onNavigateToRooms();
-                  }}
-                >
-                  <FaFolderOpen /> Quản lý phòng
-                </button>
-              )}
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  setShowMenu(false);
+                  onNavigateToAccount();
+                }}
+              >
+                <FaUser /> Tài khoản
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  setShowMenu(false);
+                  onNavigateToRooms();
+                }}
+              >
+                <FaFolderOpen /> Quản lý phòng
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  setShowMenu(false);
+                  onNavigateToAnalytics();
+                }}
+              >
+                <FaChartLine /> Analytics
+              </button>
               <button 
                 className="dropdown-item logout-btn"
                 onClick={onLogout}

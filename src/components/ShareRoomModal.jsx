@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { FaTimes, FaCopy, FaCheck, FaEnvelope, FaLink } from 'react-icons/fa';
+import React, { useState } from "react";
+import { FaTimes, FaCopy, FaCheck, FaEnvelope, FaLink } from "react-icons/fa";
 
 const API_URL = 'https://collabboardptitbe-production.up.railway.app';
 
 const ShareRoomModal = ({ roomId, onClose }) => {
-  const [emails, setEmails] = useState('');
+  const [emails, setEmails] = useState("");
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
 
   const shareUrl = `https://collab-board-ptit.vercel.app/room/${roomId}`;
 
@@ -19,50 +19,50 @@ const ShareRoomModal = ({ roomId, onClose }) => {
 
   const handleSendInvites = async () => {
     const emailList = emails
-      .split(',')
-      .map(e => e.trim())
-      .filter(e => e.length > 0);
+      .split(",")
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0);
 
     if (emailList.length === 0) {
-      setMessage('Vui lòng nhập ít nhất một email');
+      setMessage("Vui lòng nhập ít nhất một email");
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidEmails = emailList.filter(e => !emailRegex.test(e));
+    const invalidEmails = emailList.filter((e) => !emailRegex.test(e));
     if (invalidEmails.length > 0) {
-      setMessage(`Email không hợp lệ: ${invalidEmails.join(', ')}`);
+      setMessage(`Email không hợp lệ: ${invalidEmails.join(", ")}`);
       return;
     }
 
     setSending(true);
-    setMessage('');
+    setMessage("");
 
     try {
       const response = await fetch(`${API_URL}/api/rooms/invite`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           roomId,
-          emails: emailList
-        })
+          emails: emailList,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage('✅ Đã gửi lời mời thành công!');
-        setEmails('');
+        setMessage("Đã gửi lời mời thành công!");
+        setEmails("");
       } else {
-        setMessage(`❌ ${data.error || 'Không thể gửi lời mời'}`);
+        setMessage(`${data.error || "Không thể gửi lời mời"}`);
       }
     } catch (error) {
-      console.error('Error sending invites:', error);
-      setMessage('❌ Lỗi kết nối. Vui lòng thử lại.');
+      console.error("Error sending invites:", error);
+      setMessage("Lỗi kết nối. Vui lòng thử lại.");
     } finally {
       setSending(false);
     }
@@ -70,7 +70,10 @@ const ShareRoomModal = ({ roomId, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content share-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-content share-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>Chia sẻ bảng vẽ</h2>
           <button className="close-btn" onClick={onClose}>
@@ -96,11 +99,11 @@ const ShareRoomModal = ({ roomId, onClose }) => {
                 className="share-link-input"
               />
               <button
-                className={`copy-btn ${copied ? 'copied' : ''}`}
+                className={`copy-btn ${copied ? "copied" : ""}`}
                 onClick={handleCopy}
               >
                 {copied ? <FaCheck /> : <FaCopy />}
-                {copied ? 'Đã copy!' : 'Copy'}
+                {copied ? "Đã copy!" : "Copy"}
               </button>
             </div>
           </div>
@@ -126,10 +129,14 @@ const ShareRoomModal = ({ roomId, onClose }) => {
               onClick={handleSendInvites}
               disabled={sending}
             >
-              {sending ? 'Đang gửi...' : 'Gửi lời mời'}
+              {sending ? "Đang gửi..." : "Gửi lời mời"}
             </button>
             {message && (
-              <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
+              <div
+                className={`message ${
+                  message.includes("✅") ? "success" : "error"
+                }`}
+              >
                 {message}
               </div>
             )}
@@ -314,4 +321,3 @@ const ShareRoomModal = ({ roomId, onClose }) => {
 };
 
 export default ShareRoomModal;
-

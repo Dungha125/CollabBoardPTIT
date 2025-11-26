@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import './RoomManagement.css';
+import React, { useState, useEffect } from "react";
+import { 
+  FaUsers, FaClock, FaEdit, FaTrash, FaPlus, 
+  FaChartBar, FaEye, FaComments, FaPencilAlt 
+} from 'react-icons/fa';
+import CollaboratorModal from "./CollaboratorModal";
+import "./RoomManagement.css";
 
 const API_URL = 'https://collabboardptitbe-production.up.railway.app';
 
@@ -8,26 +13,28 @@ function RoomManagement({ user, onNavigateToRoom }) {
   const [ownedRooms, setOwnedRooms] = useState([]);
   const [collaboratedRooms, setCollaboratedRooms] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('owned');
+  const [activeTab, setActiveTab] = useState("owned");
   const [editingRoom, setEditingRoom] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', description: '' });
+  const [editForm, setEditForm] = useState({ name: "", description: "" });
   const [showAddCollaborator, setShowAddCollaborator] = useState(null);
-  const [collaboratorEmail, setCollaboratorEmail] = useState('');
-  const [collaboratorRole, setCollaboratorRole] = useState('editor');
-  // eslint-disable-next-line no-unused-vars
-  const [selectedRoom, setSelectedRoom] = useState(null);
-  const [roomCollaborators, setRoomCollaborators] = useState([]);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [roomStats, setRoomStats] = useState({
+    totalRooms: 0,
+    totalCollaborators: 0,
+    totalDrawings: 0,
+    totalMessages: 0
+  });
 
   useEffect(() => {
     fetchRooms();
+    fetchRoomStats();
   }, []);
 
   const fetchRooms = async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/api/rooms`, {
-        credentials: 'include'
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
@@ -35,65 +42,64 @@ function RoomManagement({ user, onNavigateToRoom }) {
         setCollaboratedRooms(data.collaborated || []);
       }
     } catch (error) {
-      console.error('Error fetching rooms:', error);
+      console.error("Error fetching rooms:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchRoomDetails = async (roomId) => {
+  const fetchRoomStats = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/rooms/${roomId}`, {
-        credentials: 'include'
+      const response = await fetch(`${API_URL}/api/rooms/stats`, {
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
-        setRoomCollaborators(data.collaborators || []);
-        setSelectedRoom(data);
+        setRoomStats(data);
       }
     } catch (error) {
-      console.error('Error fetching room details:', error);
+      console.error("Error fetching room stats:", error);
     }
   };
 
   const createNewRoom = async () => {
     // Ngăn double-click hoặc multiple calls
     if (isCreatingRoom) {
-      console.log('⚠️  Đang tạo phòng, vui lòng đợi...');
+      console.log("Đang tạo phòng, vui lòng đợi...");
       return;
     }
 
-    const name = prompt('Nhập tên phòng:');
+    const name = prompt("Nhập tên phòng:");
     if (!name) return;
 
-    const description = prompt('Nhập mô tả (tùy chọn):');
+    const description = prompt("Nhập mô tả (tùy chọn):");
 
     try {
       setIsCreatingRoom(true);
-      console.log('🏗️  Đang tạo phòng...');
+      console.log("Đang tạo phòng...");
 
       const response = await fetch(`${API_URL}/api/rooms/create`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
-        body: JSON.stringify({ name, description })
+        credentials: "include",
+        body: JSON.stringify({ name, description }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Phòng đã tạo:', data.roomId);
+        console.log("Phòng đã tạo:", data.roomId);
         await fetchRooms(); // Đợi fetch xong mới thông báo
-        alert('Tạo phòng thành công!');
+        alert("Tạo phòng thành công!");
       } else {
         const error = await response.json();
-        console.error('❌ Lỗi tạo phòng:', error);
-        alert(error.error || 'Lỗi khi tạo phòng');
+        console.error("Lỗi tạo phòng:", error);
+        alert(error.error || "Lỗi khi tạo phòng");
       }
     } catch (error) {
-      console.error('❌ Error creating room:', error);
-      alert('Lỗi kết nối khi tạo phòng');
+      console.error("Error creating room:", error);
+      alert("Lỗi kết nối khi tạo phòng");
     } finally {
       // Delay để tránh click liên tục
       setTimeout(() => {
@@ -109,20 +115,20 @@ function RoomManagement({ user, onNavigateToRoom }) {
 
     try {
       const response = await fetch(`${API_URL}/api/rooms/${roomId}`, {
-        method: 'DELETE',
-        credentials: 'include'
+        method: "DELETE",
+        credentials: "include",
       });
 
       if (response.ok) {
         fetchRooms();
-        alert('Xóa phòng thành công!');
+        alert("Xóa phòng thành công!");
       } else {
         const error = await response.json();
-        alert(error.error || 'Lỗi khi xóa phòng');
+        alert(error.error || "Lỗi khi xóa phòng");
       }
     } catch (error) {
-      console.error('Error deleting room:', error);
-      alert('Lỗi khi xóa phòng');
+      console.error("Error deleting room:", error);
+      alert("Lỗi khi xóa phòng");
     }
   };
 
@@ -130,125 +136,49 @@ function RoomManagement({ user, onNavigateToRoom }) {
     setEditingRoom(room.id);
     setEditForm({
       name: room.name,
-      description: room.description || ''
+      description: room.description || "",
     });
   };
 
   const cancelEdit = () => {
     setEditingRoom(null);
-    setEditForm({ name: '', description: '' });
+    setEditForm({ name: "", description: "" });
   };
 
   const saveEdit = async (roomId) => {
     try {
       const response = await fetch(`${API_URL}/api/rooms/${roomId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
-        body: JSON.stringify(editForm)
+        credentials: "include",
+        body: JSON.stringify(editForm),
       });
 
       if (response.ok) {
         fetchRooms();
         setEditingRoom(null);
-        alert('Cập nhật thành công!');
+        alert("Cập nhật thành công!");
       }
     } catch (error) {
-      console.error('Error updating room:', error);
-      alert('Lỗi khi cập nhật phòng');
+      console.error("Error updating room:", error);
+      alert("Lỗi khi cập nhật phòng");
     }
   };
 
-  const openCollaboratorModal = async (roomId) => {
+  const openCollaboratorModal = (roomId) => {
     setShowAddCollaborator(roomId);
-    setCollaboratorEmail('');
-    setCollaboratorRole('editor');
-    await fetchRoomDetails(roomId);
-  };
-
-  const addCollaborator = async () => {
-    if (!collaboratorEmail) {
-      alert('Vui lòng nhập email');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/api/rooms/${showAddCollaborator}/collaborators`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: collaboratorEmail,
-          role: collaboratorRole
-        })
-      });
-
-      if (response.ok) {
-        alert('Thêm cộng tác viên thành công!');
-        setCollaboratorEmail('');
-        await fetchRoomDetails(showAddCollaborator);
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Lỗi khi thêm cộng tác viên');
-      }
-    } catch (error) {
-      console.error('Error adding collaborator:', error);
-      alert('Lỗi khi thêm cộng tác viên');
-    }
-  };
-
-  const removeCollaborator = async (roomId, userId, userName) => {
-    if (!confirm(`Xóa ${userName} khỏi phòng?`)) return;
-
-    try {
-      const response = await fetch(`${API_URL}/api/rooms/${roomId}/collaborators/${userId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        alert('Đã xóa cộng tác viên');
-        await fetchRoomDetails(roomId);
-      }
-    } catch (error) {
-      console.error('Error removing collaborator:', error);
-      alert('Lỗi khi xóa cộng tác viên');
-    }
-  };
-
-  const updateCollaboratorRole = async (roomId, userId, newRole) => {
-    try {
-      const response = await fetch(`${API_URL}/api/rooms/${roomId}/collaborators/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ role: newRole })
-      });
-
-      if (response.ok) {
-        alert('Đã cập nhật quyền');
-        await fetchRoomDetails(roomId);
-      }
-    } catch (error) {
-      console.error('Error updating role:', error);
-      alert('Lỗi khi cập nhật quyền');
-    }
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -256,19 +186,23 @@ function RoomManagement({ user, onNavigateToRoom }) {
     const isEditing = editingRoom === room.id;
 
     return (
-      <div key={room.id} className="room-card">
+      <div key={room.id} className="room-card-enhanced">
         {isEditing ? (
           <div className="room-edit-form">
             <input
               type="text"
               value={editForm.name}
-              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, name: e.target.value })
+              }
               placeholder="Tên phòng"
               className="edit-input"
             />
             <textarea
               value={editForm.description}
-              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              onChange={(e) =>
+                setEditForm({ ...editForm, description: e.target.value })
+              }
               placeholder="Mô tả"
               className="edit-textarea"
             />
@@ -283,64 +217,88 @@ function RoomManagement({ user, onNavigateToRoom }) {
           </div>
         ) : (
           <>
-            <div className="room-header">
-              <h3 className="room-name">{room.name}</h3>
-              {room.is_active && <span className="room-badge active">Active</span>}
+            <div className="room-header-enhanced">
+              <div className="room-title-section">
+                <h3 className="room-name">{room.name}</h3>
+                {room.is_active && (
+                  <span className="room-badge active">🟢 Active</span>
+                )}
+              </div>
+              <div className="room-icons">
+                <FaPencilAlt />
+              </div>
             </div>
-            
+
             <p className="room-description">
-              {room.description || 'Không có mô tả'}
+              {room.description || "Không có mô tả"}
             </p>
-            
+
+            <div className="room-stats-mini">
+              {isOwned && (
+                <>
+                  <div className="stat-mini">
+                    <FaUsers />
+                    <span>{room.collaborator_count || 0}</span>
+                  </div>
+                  <div className="stat-mini">
+                    <FaEye />
+                    <span>{room.view_count || 0}</span>
+                  </div>
+                  <div className="stat-mini">
+                    <FaComments />
+                    <span>{room.message_count || 0}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className="room-meta">
               {isOwned ? (
                 <>
                   <span className="meta-item">
-                    👥 {room.collaborator_count || 0} cộng tác viên
-                  </span>
-                  <span className="meta-item">
-                    📅 Tạo: {formatDate(room.created_at)}
+                    <FaClock /> Tạo: {formatDate(room.created_at)}
                   </span>
                 </>
               ) : (
                 <>
                   <span className="meta-item">
-                    👤 Chủ phòng: {room.owner_name}
+                    <FaUsers /> Chủ phòng: {room.owner_name}
                   </span>
-                  <span className="meta-item">
-                    🔑 Quyền: {room.my_role}
-                  </span>
+                  <span className="meta-item">Quyền: {room.my_role}</span>
                 </>
               )}
             </div>
-            
-            <div className="room-actions">
+
+            <div className="room-actions-enhanced">
               <button
                 onClick={() => onNavigateToRoom(room.id)}
-                className="btn-primary"
+                className="btn-primary-new"
               >
-                Mở phòng
+                <FaEye /> Mở phòng
               </button>
-              
+
               {isOwned && (
                 <>
                   <button
                     onClick={() => startEdit(room)}
-                    className="btn-secondary"
+                    className="btn-icon"
+                    title="Chỉnh sửa"
                   >
-                    Sửa
+                    <FaEdit />
                   </button>
                   <button
                     onClick={() => openCollaboratorModal(room.id)}
-                    className="btn-secondary"
+                    className="btn-icon"
+                    title="Cộng tác viên"
                   >
-                    Cộng tác viên
+                    <FaUsers />
                   </button>
                   <button
                     onClick={() => deleteRoom(room.id, room.name)}
-                    className="btn-danger"
+                    className="btn-icon btn-danger-icon"
+                    title="Xóa"
                   >
-                    Xóa
+                    <FaTrash />
                   </button>
                 </>
               )}
@@ -362,35 +320,75 @@ function RoomManagement({ user, onNavigateToRoom }) {
   return (
     <div className="room-management">
       <div className="room-management-header">
-        <h1>Quản lý Phòng</h1>
-        <button 
-          onClick={createNewRoom} 
+        <h1><FaChartBar /> Quản lý Phòng</h1>
+        <button
+          onClick={createNewRoom}
           className="btn-create"
           disabled={isCreatingRoom}
         >
-          {isCreatingRoom ? '⏳ Đang tạo...' : '+ Tạo phòng mới'}
+          {isCreatingRoom ? "⏳ Đang tạo..." : <><FaPlus /> Tạo phòng mới</>}
         </button>
+      </div>
+
+      {/* Statistics Dashboard */}
+      <div className="stats-dashboard">
+        <div className="stat-card-dash">
+          <div className="stat-icon-dash" style={{ background: '#667eea' }}>
+            <FaChartBar />
+          </div>
+          <div className="stat-content-dash">
+            <div className="stat-value-dash">{roomStats.totalRooms}</div>
+            <div className="stat-label-dash">Tổng phòng</div>
+          </div>
+        </div>
+        <div className="stat-card-dash">
+          <div className="stat-icon-dash" style={{ background: '#28a745' }}>
+            <FaUsers />
+          </div>
+          <div className="stat-content-dash">
+            <div className="stat-value-dash">{roomStats.totalCollaborators}</div>
+            <div className="stat-label-dash">Cộng tác viên</div>
+          </div>
+        </div>
+        <div className="stat-card-dash">
+          <div className="stat-icon-dash" style={{ background: '#ffc107' }}>
+            <FaPencilAlt />
+          </div>
+          <div className="stat-content-dash">
+            <div className="stat-value-dash">{roomStats.totalDrawings}</div>
+            <div className="stat-label-dash">Tổng vẽ</div>
+          </div>
+        </div>
+        <div className="stat-card-dash">
+          <div className="stat-icon-dash" style={{ background: '#17a2b8' }}>
+            <FaComments />
+          </div>
+          <div className="stat-content-dash">
+            <div className="stat-value-dash">{roomStats.totalMessages}</div>
+            <div className="stat-label-dash">Tin nhắn</div>
+          </div>
+        </div>
       </div>
 
       <div className="room-tabs">
         <button
-          className={`tab ${activeTab === 'owned' ? 'active' : ''}`}
-          onClick={() => setActiveTab('owned')}
+          className={`tab ${activeTab === "owned" ? "active" : ""}`}
+          onClick={() => setActiveTab("owned")}
         >
           Phòng của tôi ({ownedRooms.length})
         </button>
         <button
-          className={`tab ${activeTab === 'collaborated' ? 'active' : ''}`}
-          onClick={() => setActiveTab('collaborated')}
+          className={`tab ${activeTab === "collaborated" ? "active" : ""}`}
+          onClick={() => setActiveTab("collaborated")}
         >
           Phòng cộng tác ({collaboratedRooms.length})
         </button>
       </div>
 
       <div className="rooms-grid">
-        {activeTab === 'owned' ? (
+        {activeTab === "owned" ? (
           ownedRooms.length > 0 ? (
-            ownedRooms.map(room => renderRoom(room, true))
+            ownedRooms.map((room) => renderRoom(room, true))
           ) : (
             <div className="empty-state">
               <p>Bạn chưa có phòng nào</p>
@@ -399,109 +397,24 @@ function RoomManagement({ user, onNavigateToRoom }) {
               </button>
             </div>
           )
+        ) : collaboratedRooms.length > 0 ? (
+          collaboratedRooms.map((room) => renderRoom(room, false))
         ) : (
-          collaboratedRooms.length > 0 ? (
-            collaboratedRooms.map(room => renderRoom(room, false))
-          ) : (
-            <div className="empty-state">
-              <p>Bạn chưa được mời vào phòng nào</p>
-            </div>
-          )
+          <div className="empty-state">
+            <p>Bạn chưa được mời vào phòng nào</p>
+          </div>
         )}
       </div>
 
-      {/* Collaborator Modal */}
+      {/* Collaborator Modal - Unified */}
       {showAddCollaborator && (
-        <div className="modal-overlay" onClick={() => setShowAddCollaborator(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Quản lý Cộng tác viên</h2>
-              <button onClick={() => setShowAddCollaborator(null)} className="modal-close">
-                ×
-              </button>
-            </div>
-
-            <div className="modal-body">
-              <div className="add-collaborator-form">
-                <h3>Thêm cộng tác viên mới</h3>
-                <input
-                  type="email"
-                  value={collaboratorEmail}
-                  onChange={(e) => setCollaboratorEmail(e.target.value)}
-                  placeholder="Email người dùng"
-                  className="input-email"
-                />
-                <select
-                  value={collaboratorRole}
-                  onChange={(e) => setCollaboratorRole(e.target.value)}
-                  className="input-role"
-                >
-                  <option value="viewer">Viewer (Chỉ xem)</option>
-                  <option value="editor">Editor (Chỉnh sửa)</option>
-                  <option value="admin">Admin (Quản lý)</option>
-                </select>
-                <button onClick={addCollaborator} className="btn-add">
-                  Thêm
-                </button>
-              </div>
-
-              <div className="collaborators-list">
-                <h3>Danh sách cộng tác viên ({roomCollaborators.length})</h3>
-                {roomCollaborators.length > 0 ? (
-                  <div className="collaborators-table">
-                    {roomCollaborators.map((collab) => (
-                      <div key={collab.id} className="collaborator-row">
-                        <div className="collaborator-info">
-                          <img
-                            src={collab.picture || 'https://via.placeholder.com/40'}
-                            alt={collab.name}
-                            className="collaborator-avatar"
-                          />
-                          <div>
-                            <div className="collaborator-name">{collab.name}</div>
-                            <div className="collaborator-email">{collab.email}</div>
-                          </div>
-                        </div>
-                        <div className="collaborator-actions">
-                          <select
-                            value={collab.role}
-                            onChange={(e) => updateCollaboratorRole(
-                              showAddCollaborator,
-                              collab.user_id,
-                              e.target.value
-                            )}
-                            className="role-select"
-                          >
-                            <option value="viewer">Viewer</option>
-                            <option value="editor">Editor</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                          <button
-                            onClick={() => removeCollaborator(
-                              showAddCollaborator,
-                              collab.user_id,
-                              collab.name
-                            )}
-                            className="btn-remove"
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="empty-message">Chưa có cộng tác viên</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <CollaboratorModal
+          roomId={showAddCollaborator}
+          onClose={() => setShowAddCollaborator(null)}
+        />
       )}
     </div>
   );
 }
 
 export default RoomManagement;
-
-

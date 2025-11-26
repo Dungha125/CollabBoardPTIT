@@ -1,0 +1,385 @@
+.account-management {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  overflow-y: auto;
+}
+
+.account-header {
+  background: white;
+  padding: 20px 40px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.back-btn {
+  background: transparent;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #f8f9fa;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.account-header h1 {
+  margin: 0;
+  font-size: 1.8em;
+  color: #333;
+}
+
+.account-content {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 30px;
+}
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-card {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 4px solid #667eea;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 3em;
+}
+
+.profile-info {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.profile-info h2 {
+  margin: 0 0 15px 0;
+  font-size: 1.8em;
+  color: #333;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.name-input {
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1.1em;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.name-input:focus {
+  border-color: #667eea;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.save-btn, .cancel-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.save-btn {
+  background: #28a745;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #218838;
+}
+
+.cancel-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: #c82333;
+}
+
+.edit-btn {
+  background: transparent;
+  border: 1px solid #667eea;
+  color: #667eea;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 15px;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background: #667eea;
+  color: white;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  justify-content: center;
+}
+
+.info-item svg {
+  color: #667eea;
+}
+
+.logout-btn-full {
+  width: 100%;
+  padding: 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn-full:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+}
+
+.stats-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.stat-card-account {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.stat-card-account:hover {
+  transform: translateX(5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon-account {
+  font-size: 2em;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value-account {
+  font-size: 2em;
+  font-weight: 700;
+  color: #333;
+}
+
+.stat-title-account {
+  font-size: 0.95em;
+  color: #666;
+  margin-top: 5px;
+}
+
+.activity-section {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.activity-section h2 {
+  margin: 0 0 25px 0;
+  font-size: 1.5em;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.activity-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activity-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.activity-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.activity-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.activity-item {
+  display: flex;
+  align-items: start;
+  gap: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.activity-item:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.activity-icon {
+  font-size: 2em;
+  flex-shrink: 0;
+}
+
+.activity-details {
+  flex: 1;
+}
+
+.activity-text {
+  margin: 0 0 5px 0;
+  font-weight: 500;
+  color: #333;
+}
+
+.activity-time {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.no-activity {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.no-activity p {
+  font-size: 1.1em;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .account-content {
+    grid-template-columns: 1fr;
+    padding: 0 20px;
+  }
+
+  .profile-section {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .account-header {
+    padding: 15px 20px;
+  }
+
+  .account-header h1 {
+    font-size: 1.4em;
+  }
+
+  .profile-card {
+    padding: 20px;
+  }
+
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .stats-cards {
+    flex-direction: column;
+  }
+
+  .activity-section {
+    padding: 20px;
+  }
+}
+
